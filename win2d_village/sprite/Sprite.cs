@@ -7,74 +7,147 @@ using System.Threading.Tasks;
 using Microsoft.Graphics.Canvas.Effects;
 using Windows.Foundation;
 using Windows.System;
+using Microsoft.Graphics.Canvas;
 
 namespace win2d_village
 {
     class Sprite
     {
+        //public SpriteAnimationSet SpriteAnimationSet { get; set; }
         public Point Position;
-        public SpriteAnimationSet SpriteAnimationSet { get; set; }
+        private SpriteSheet _spriteSheet;
+        private SPRITE_ANIMATION _currentAnimationState;
+        private SpriteAnimation _currentAnimation;
+        //private int _frameIndex = 0;
+
+        private Queue<SPRITE_ANIMATION> _stateQueue = new Queue<SPRITE_ANIMATION>();
 
         private Sprite() { }
-        public Sprite(Point position, SpriteAnimationSet spriteAnimationSet)
+        public Sprite(CanvasBitmap image, int imageResolution, Point position)
         {
             Position = position;
-            SpriteAnimationSet = spriteAnimationSet;
+            _spriteSheet = new SpriteSheet(image, imageResolution);
+
+            _currentAnimationState = SPRITE_ANIMATION.IDLE_DOWN;
+            _currentAnimation = SpriteAnimationDefinitions.Copy(_currentAnimationState);
         }
 
         public void Draw(CanvasAnimatedDrawEventArgs args)
         {
-            SpriteAnimationSet.Draw(Position, args);
+            _currentAnimation.Draw(_spriteSheet, Position, args);
         }
-        public void Update(HashSet<VirtualKey> keysDown, CanvasAnimatedUpdateEventArgs args)
+        public void Update(CanvasAnimatedUpdateEventArgs args)
         {
-            switch (SpriteAnimationSet.CurrentAnimation)
+            UpdatePosition();
+            UpdateAnimation(args);
+        }
+
+        private void UpdatePosition()
+        {
+            switch (_currentAnimationState)
             {
                 case SPRITE_ANIMATION.WALK_DOWN:
                     Position.Y += 1;
-                    if (Position.Y % 64 == 0 && !keysDown.Contains(VirtualKey.Down)) { SetAnimation(SPRITE_ANIMATION.IDLE_DOWN); }
+                    if (Position.Y % _spriteSheet.Resolution == 0) { SetNextState(); }
                     break;
                 case SPRITE_ANIMATION.WALK_UP:
                     Position.Y -= 1;
-                    if (Position.Y % 64 == 0 && (!keysDown.Contains(VirtualKey.Up) || Position.Y == 0)) { SetAnimation(SPRITE_ANIMATION.IDLE_UP); }
+                    if (Position.Y % _spriteSheet.Resolution == 0) { SetNextState(); }
                     break;
                 case SPRITE_ANIMATION.WALK_LEFT:
                     Position.X -= 1;
-                    if (Position.X % 64 == 0 && (!keysDown.Contains(VirtualKey.Left) || Position.X == 0)) { SetAnimation(SPRITE_ANIMATION.IDLE_LEFT); }
+                    if (Position.X % _spriteSheet.Resolution == 0) { SetNextState(); }
                     break;
                 case SPRITE_ANIMATION.WALK_RIGHT:
                     Position.X += 1;
-                    if (Position.X % 64 == 0 && !keysDown.Contains(VirtualKey.Right)) { SetAnimation(SPRITE_ANIMATION.IDLE_RIGHT); }
+                    if (Position.X % _spriteSheet.Resolution == 0) { SetNextState(); }
                     break;
                 case SPRITE_ANIMATION.IDLE_DOWN:
                 case SPRITE_ANIMATION.IDLE_UP:
                 case SPRITE_ANIMATION.IDLE_LEFT:
                 case SPRITE_ANIMATION.IDLE_RIGHT:
-                    if (keysDown.Contains(VirtualKey.Down)) { SetAnimation(SPRITE_ANIMATION.WALK_DOWN); }
-                    else if (keysDown.Contains(VirtualKey.Up))
-                    {
-                        if (Position.Y > 0) { SetAnimation(SPRITE_ANIMATION.WALK_UP); }
-                        else { SetAnimation(SPRITE_ANIMATION.IDLE_UP); }
-                    }
-                    else if (keysDown.Contains(VirtualKey.Left))
-                    {
-                        if (Position.X > 0) { SetAnimation(SPRITE_ANIMATION.WALK_LEFT); }
-                        else { SetAnimation(SPRITE_ANIMATION.IDLE_LEFT); }
-                    }
-                    else if (keysDown.Contains(VirtualKey.Right)) { SetAnimation(SPRITE_ANIMATION.WALK_RIGHT); }
+                    if(_stateQueue.Count > 0) { SetNextState(); }
+                    else if (Statics.Random.Next(100) == 0) { GenerateRandomQueue(); }
                     break;
             }
-            SpriteAnimationSet.Update(args);
         }
+
+        private void UpdateAnimation(CanvasAnimatedUpdateEventArgs args)
+        {
+            _currentAnimation.Update(args);
+        }
+
+        internal void HandleKeyboard(HashSet<VirtualKey> keysDown)
+        {
+            //if (keysDown.Contains(VirtualKey.Down)) { SetAnimation(SPRITE_ANIMATION.WALK_DOWN); }
+            //else if (keysDown.Contains(VirtualKey.Up))
+            //{
+            //    if (Position.Y > 0) { SetAnimation(SPRITE_ANIMATION.WALK_UP); }
+            //    else { SetAnimation(SPRITE_ANIMATION.IDLE_UP); }
+            //}
+            //else if (keysDown.Contains(VirtualKey.Left))
+            //{
+            //    if (Position.X > 0) { SetAnimation(SPRITE_ANIMATION.WALK_LEFT); }
+            //    else { SetAnimation(SPRITE_ANIMATION.IDLE_LEFT); }
+            //}
+            //else if (keysDown.Contains(VirtualKey.Right)) { SetAnimation(SPRITE_ANIMATION.WALK_RIGHT); }
+        }
+
         public void SetAnimation(SPRITE_ANIMATION animation)
         {
-            SpriteAnimationSet.SetAnimation(animation);
+            _currentAnimationState = animation;
+            _currentAnimation = SpriteAnimationDefinitions.Copy(_currentAnimationState);
         }
 
-        internal void MoveDown()
+        private void GenerateRandomQueue()
         {
-            SetAnimation(SPRITE_ANIMATION.WALK_DOWN);
+            for(int i = 0; i < 10; i++)
+            {
+                switch(Statics.Random.Next(4))
+                {
+                    case 0:
+                        _stateQueue.Enqueue(SPRITE_ANIMATION.WALK_RIGHT);
+                        break;
+                    case 1:
+                        _stateQueue.Enqueue(SPRITE_ANIMATION.WALK_LEFT);
+                        break;
+                    case 2:
+                        _stateQueue.Enqueue(SPRITE_ANIMATION.WALK_DOWN);
+                        break;
+                    case 3:
+                        _stateQueue.Enqueue(SPRITE_ANIMATION.WALK_UP);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
 
+        private void SetNextState()
+        {
+            if (_stateQueue.Count > 0)
+            {
+                SPRITE_ANIMATION nextState = _stateQueue.Dequeue();
+                if (nextState != _currentAnimationState) { SetAnimation(nextState); }
+            }
+            else
+            {
+                switch (_currentAnimationState)
+                {
+                    case SPRITE_ANIMATION.WALK_DOWN:
+                        SetAnimation(SPRITE_ANIMATION.IDLE_DOWN);
+                        break;
+                    case SPRITE_ANIMATION.WALK_UP:
+                        SetAnimation(SPRITE_ANIMATION.IDLE_UP);
+                        break;
+                    case SPRITE_ANIMATION.WALK_LEFT:
+                        SetAnimation(SPRITE_ANIMATION.IDLE_LEFT);
+                        break;
+                    case SPRITE_ANIMATION.WALK_RIGHT:
+                        SetAnimation(SPRITE_ANIMATION.IDLE_RIGHT);
+                        break;
+                }
+            }
         }
     }
 }

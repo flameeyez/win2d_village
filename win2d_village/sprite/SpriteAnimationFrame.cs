@@ -17,5 +17,13 @@ namespace win2d_village
             X = x;
             Y = y;
         }
+
+        internal static SpriteAnimationFrame Copy(SpriteAnimationFrame frame)
+        {
+            SpriteAnimationFrame copy = new SpriteAnimationFrame();
+            copy.X = frame.X;
+            copy.Y = frame.Y;
+            return copy;
+        }
     }
 }

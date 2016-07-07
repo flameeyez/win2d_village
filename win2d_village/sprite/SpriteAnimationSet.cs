@@ -12,39 +12,50 @@ namespace win2d_village
 {
     class SpriteAnimationSet
     {
-        public ChromaKeyEffect CharacterMap;
-        public Dictionary<SPRITE_ANIMATION, SpriteAnimation> SpriteAnimations = new Dictionary<SPRITE_ANIMATION, SpriteAnimation>();
-        public SPRITE_ANIMATION CurrentAnimation { get; internal set; }
+        public CanvasBitmap CharacterMap;
+
+        private Dictionary<SPRITE_ANIMATION, SpriteAnimation> Animations = new Dictionary<SPRITE_ANIMATION, SpriteAnimation>();
+        public SpriteAnimation CurrentAnimation { get; set; }
+        private SPRITE_ANIMATION _currentAnimationState;
+        public SPRITE_ANIMATION CurrentAnimationState
+        {
+            get { return _currentAnimationState; }
+            internal set
+            {
+                _currentAnimationState = value;
+                CurrentAnimation = Animations[_currentAnimationState];
+            }
+        }
         public int Resolution { get; set; }
 
-        public SpriteAnimationSet(ChromaKeyEffect characterMap, int resolution)
+        public SpriteAnimationSet(CanvasBitmap characterMap, int resolution)
         {
             CharacterMap = characterMap;
             Resolution = resolution;
         }
 
-        internal void SetAnimation(SPRITE_ANIMATION animation)
+        internal void SetAnimation(SPRITE_ANIMATION newAnimationState)
         {
-            if (animation != CurrentAnimation)
+            if (newAnimationState != CurrentAnimationState)
             {
-                CurrentAnimation = animation;
-                SpriteAnimations[CurrentAnimation].Reset();
+                CurrentAnimationState = newAnimationState;
+                CurrentAnimation.Reset();
             }
         }
 
-        public void Draw(Point position, CanvasAnimatedDrawEventArgs args)
-        {
-            args.DrawingSession.DrawImage(CharacterMap, (float)position.X, (float)position.Y, new Rect(SpriteAnimations[CurrentAnimation].CurrentFrame.X * Resolution, SpriteAnimations[CurrentAnimation].CurrentFrame.Y * Resolution, Resolution, Resolution));
-        }
+        //public void Draw(Point position, CanvasAnimatedDrawEventArgs args)
+        //{
+        //    args.DrawingSession.DrawImage(CharacterMap, (float)position.X, (float)position.Y, new Rect(CurrentAnimation.CurrentFrame.X * Resolution, CurrentAnimation.CurrentFrame.Y * Resolution, Resolution, Resolution));
+        //}
 
         public void Update(CanvasAnimatedUpdateEventArgs args)
         {
-            SpriteAnimations[CurrentAnimation].Update(args);
+            CurrentAnimation.Update(args);
         }
 
-        internal void Add(SPRITE_ANIMATION animationType, SpriteAnimation animation)
-        {
-            SpriteAnimations.Add(animationType, animation);
-        }
+        //internal void Add(SPRITE_ANIMATION animation)
+        //{
+        //    Animations.Add(animation, SpriteAnimationDefinitions.Copy(animation));
+        //}
     }
 }

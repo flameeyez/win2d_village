@@ -101,8 +101,11 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="sprite\Sprite.cs" />
     <Compile Include="sprite\SpriteAnimation.cs" />
+    <Compile Include="sprite\SpriteAnimationDefinitions.cs" />
     <Compile Include="sprite\SpriteAnimationFrame.cs" />
     <Compile Include="sprite\SpriteAnimationSet.cs" />
+    <Compile Include="sprite\SpriteSheet.cs" />
+    <Compile Include="Statics.cs" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">

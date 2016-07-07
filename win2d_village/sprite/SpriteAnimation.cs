@@ -1,9 +1,11 @@
-﻿using Microsoft.Graphics.Canvas.UI.Xaml;
+﻿using Microsoft.Graphics.Canvas;
+using Microsoft.Graphics.Canvas.UI.Xaml;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.Foundation;
 
 namespace win2d_village
 {
@@ -38,18 +40,21 @@ namespace win2d_village
 
     class SpriteAnimation
     {
-        public List<SpriteAnimationFrame> Frames = new List<SpriteAnimationFrame>();
-
-        private int _currentFrame;
         private bool _loops;
+        public List<SpriteAnimationFrame> Frames = new List<SpriteAnimationFrame>();
+        private int _currentFrameIndex;
+        private SpriteAnimationFrame _currentFrame { get { return Frames[_currentFrameIndex]; } }
         private double _frameDurationInMilliseconds;
         private double _millisecondsSinceLastUpdate;
-        
-        public SpriteAnimationFrame CurrentFrame { get { return Frames[_currentFrame]; } }
+
+        internal void Draw(SpriteSheet spriteSheet, Point position, CanvasAnimatedDrawEventArgs args)
+        {
+            args.DrawingSession.DrawImage(spriteSheet.Image, (float)position.X, (float)position.Y, new Rect(_currentFrame.X * spriteSheet.Resolution, _currentFrame.Y * spriteSheet.Resolution, spriteSheet.Resolution, spriteSheet.Resolution));
+        }
 
         internal void Reset()
         {
-            _currentFrame = 0;
+            _currentFrameIndex = 0;
         }
 
         public SpriteAnimation(bool loops = true, double frameDurationInMilliseconds = 100)
@@ -64,14 +69,23 @@ namespace win2d_village
             _millisecondsSinceLastUpdate += args.Timing.ElapsedTime.TotalMilliseconds;
             if (_millisecondsSinceLastUpdate >= _frameDurationInMilliseconds)
             {
-                _currentFrame = _currentFrame + 1;
-                if(_currentFrame >= Frames.Count)
+                _currentFrameIndex = _currentFrameIndex + 1;
+                if(_currentFrameIndex >= Frames.Count)
                 {
-                    if(_loops) { _currentFrame %= Frames.Count; }
-                    else { _currentFrame--; }
+                    if(_loops) { _currentFrameIndex %= Frames.Count; }
+                    else { _currentFrameIndex--; }
                 }
                 _millisecondsSinceLastUpdate -= _frameDurationInMilliseconds;
             }
+        }
+
+        public static SpriteAnimation Copy(SpriteAnimation animation)
+        {
+            bool loops = animation._loops;
+            double frameDurationInMilliseconds = animation._frameDurationInMilliseconds;
+            SpriteAnimation copy = new SpriteAnimation(loops, frameDurationInMilliseconds);
+            foreach (SpriteAnimationFrame frame in animation.Frames) { copy.Frames.Add(SpriteAnimationFrame.Copy(frame)); }
+            return copy;
         }
     }
 }
