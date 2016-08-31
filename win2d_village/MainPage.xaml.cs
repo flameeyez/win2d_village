@@ -36,6 +36,8 @@ namespace win2d_village
         int nCurrentSprite = 0;
         Stopwatch sDraw, sUpdate;
 
+        MessageBox mb;
+
         public MainPage()
         {
             this.InitializeComponent();
@@ -70,6 +72,8 @@ namespace win2d_village
                 sprite.Draw(args);
             }
 
+            mb.Draw(args);
+
             sDraw.Stop();
 
             args.DrawingSession.FillRectangle(new Rect(1690, 0, 200, 60), Colors.CornflowerBlue);
@@ -100,12 +104,23 @@ namespace win2d_village
         {
             CanvasBitmap characterMap = await CanvasBitmap.LoadAsync(sender, "img\\characters.png");
 
-            for (int i = 0; i < 5000; i++)
+            int maxX = 1920 / 64;
+            int maxY = 1080 / 64;
+
+            for (int i = 0; i < 5; i++)
             {
-                int x = Statics.Random.Next(40) * 64;
-                int y = Statics.Random.Next(20) * 64;
+                int x = Statics.Random.Next(maxX) * 64;
+                int y = Statics.Random.Next(maxY) * 64;
                 Sprites.Add(new Sprite(characterMap, 64, new Point(x, y)));
             }
+
+            Vector2 position = new Vector2(100, 100);
+            double width = 500;
+            double height = 200;
+            Color backgroundColor = Colors.Blue;
+
+            mb = new MessageBox(position, width, height, backgroundColor);
+            mb.Strings.Add("Hello!");
         }
     }
 }
